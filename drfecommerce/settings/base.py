@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     # External Packages
     'rest_framework',
     # Internal Apps
+    'drfecommerce.product',
 
 ]
 MIDDLEWARE = [
@@ -103,6 +104,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 REST_FRAMEWORK = {
-    
+
 }
 
