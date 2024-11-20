@@ -13,7 +13,8 @@ class CategoryViewSet(viewsets.ViewSet):
 
     @extend_schema(responses=CategorySerializer)
     def list(self, request):
-        serializer = CategorySerializer(self.queryset, many=True)
+        queryset = Category.objects.all()
+        serializer = CategorySerializer(queryset, many=True)
         return Response(serializer.data)
     
     @extend_schema(responses=CategorySerializer)
