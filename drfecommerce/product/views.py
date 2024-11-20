@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
 
+
+
+
 class CategoryViewSet(viewsets.ViewSet):
     queryset = Category.objects.all()
 
@@ -64,7 +67,19 @@ class CategoryViewSet(viewsets.ViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
+    @extend_schema(responses=CategorySerializer)
+    def destroy(self, request, pk=None):
+        try:
+            queryset = Category.objects.get(pk=pk)
+        except Category.DoesNotExist:
+            return Response(
+                {"error": "Category not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        queryset.delete()
+        return Response({"message": "Category is deleted"}, status=status.HTTP_200_OK)
 
 
 
@@ -122,7 +137,20 @@ class BrandViewSet(viewsets.ViewSet):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(responses=BrandSerializer)
+    def destroy(self, request, pk=None):
+        try:
+            queryset = Brand.objects.get(pk=pk)
+        except Brand.DoesNotExist:
+            return Response(
+                {"error": "Brand not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
         
+        queryset.delete()
+        return Response({"message": "Brand is deleted"}, status=status.HTTP_200_OK)
+
 
 
 
@@ -135,7 +163,49 @@ class ProductViewSet(viewsets.ViewSet):
         serializer = ProductSerializer(self.queryset, many=True)
         return Response(serializer.data)
     
+    @extend_schema(responses=ProductSerializer)
+    def retrieve(self, request, pk=None):
+        try:
+            queryset = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return Response(
+                {"error": "Product not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = ProductSerializer(queryset)
+        return Response(serializer.data)
     
+    @extend_schema(responses=ProductSerializer)
+    def update(self, request, pk=None):
+        try:
+            product = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return Response(
+                {"error": "Product not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        brand_name = request.data.get("brand")
+        if brand_name:
+            try:
+                brand_instance = Brand.objects.get(name=brand_name)  # Get the Brand instance
+                product.brand = brand_instance  # Assign the Brand instance to the product
+                product.save()
+            except Brand.DoesNotExist:
+                return Response(
+                    {"error": "Brand not found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        # serializer = ProductSerializer(product, data=request.data, partial=True)
+        # if serializer.is_valid():
+        #     serializer.save()
+            # return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"message": "Product updated successfully"},
+            status=status.HTTP_200_OK)
+
     @extend_schema(responses=ProductSerializer)
     def create(self, request):
         brand_name = request.data.get('brand')
@@ -179,4 +249,20 @@ class ProductViewSet(viewsets.ViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @extend_schema(responses=ProductSerializer)
+    def destroy(self, request, pk=None):
+        try:
+            queryset = Product.objects.get(pk=pk)
+        except Product.DoesNotExist:
+            return Response(
+                {"error": "Product not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        queryset.delete()
+        return Response({"message": "Product is deleted"}, status=status.HTTP_200_OK)
+
+
+
 
