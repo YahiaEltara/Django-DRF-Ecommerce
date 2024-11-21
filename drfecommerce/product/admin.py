@@ -9,7 +9,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 class BrandgAdmin(admin.ModelAdmin):
-    list_display = ['name', 'id']
+    list_display = ['name', 'slug', 'id']
     list_filter = ['name']
     search_fields = ['name']
 

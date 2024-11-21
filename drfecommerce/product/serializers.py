@@ -6,8 +6,9 @@ from .models import Category, Brand, Product
 
         
 class ProductSerializer(serializers.ModelSerializer):
-    brand = serializers.ReadOnlyField(source = 'brand.name')
-    category = serializers.ReadOnlyField(source = 'category.name')
+    brand = serializers.SlugRelatedField(queryset=Brand.objects.all(), slug_field='name')
+    category = serializers.SlugRelatedField(queryset=Category.objects.all(), slug_field='name')
+
     class Meta:
         model = Product
         fields = '__all__'
@@ -25,7 +26,7 @@ class BrandSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    parent = serializers.ReadOnlyField(source='parent.name')
+    parent = serializers.SlugRelatedField(queryset=Category.objects.all(), slug_field='name')
     products = ProductSerializer(many = True, read_only = True)
 
     class Meta:

@@ -13,8 +13,7 @@ class CategoryViewSet(viewsets.ViewSet):
 
     @extend_schema(responses=CategorySerializer)
     def list(self, request):
-        queryset = Category.objects.all()
-        serializer = CategorySerializer(queryset, many=True)
+        serializer = CategorySerializer(self.queryset, many=True)
         return Response(serializer.data)
     
     @extend_schema(responses=CategorySerializer)
@@ -22,10 +21,7 @@ class CategoryViewSet(viewsets.ViewSet):
         try:
             queryset = Category.objects.get(pk=pk)
         except Category.DoesNotExist:
-            return Response(
-                {"error": "Category not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
         
         serializer = CategorySerializer(queryset)
         return Response(serializer.data)
@@ -35,10 +31,7 @@ class CategoryViewSet(viewsets.ViewSet):
         try:
             category = Category.objects.get(pk=pk)
         except Category.DoesNotExist:
-            return Response(
-                {"error": "Category not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Category not found"}, status=status.HTTP_404_NOT_FOUND)
         
         serializer = CategorySerializer(category, data=request.data, partial=True)
         if serializer.is_valid():
@@ -49,23 +42,13 @@ class CategoryViewSet(viewsets.ViewSet):
     
     @extend_schema(responses=CategorySerializer)
     def create(self, request):
-        parent_id = request.data.get('parent')
-        parent = None
-        if parent_id:
-            try:
-                parent = Category.objects.get(pk=parent_id)
-            except Category.DoesNotExist:
-                return Response(
-                    {"error": "Parent category not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-        category = Category.objects.create(name=request.data['name'],
-                                           parent = parent)
-        serializer = CategorySerializer(category, data=request.data)
+        if Category.objects.filter(name=request.data.get('name')).exists():
+            return Response({"error": "A category with this name already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = CategorySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -88,6 +71,7 @@ class CategoryViewSet(viewsets.ViewSet):
 
 class BrandViewSet(viewsets.ViewSet):
     queryset = Brand.objects.all()
+    lookup_field = 'slug'
 
     @extend_schema(responses=BrandSerializer)
     def list(self, request):
@@ -95,27 +79,21 @@ class BrandViewSet(viewsets.ViewSet):
         return Response(serializer.data)
     
     @extend_schema(responses=BrandSerializer)
-    def retrieve(self, request, pk=None):
+    def retrieve(self, request, slug=None):
         try:
-            queryset = Brand.objects.get(pk=pk)
+            queryset = Brand.objects.get(slug=slug)
         except Brand.DoesNotExist:
-            return Response(
-                {"error": "Brand not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
         
         serializer = BrandSerializer(queryset)
         return Response(serializer.data)
     
     @extend_schema(responses=BrandSerializer)
-    def update(self, request, pk=None):
+    def update(self, request, slug=None):
         try:
-            brand = Brand.objects.get(pk=pk)
+            brand = Brand.objects.get(slug=slug)
         except Brand.DoesNotExist:
-            return Response(
-                {"error": "Brand not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
         
         serializer = BrandSerializer(brand, data=request.data, partial=True)
         if serializer.is_valid():
@@ -126,28 +104,22 @@ class BrandViewSet(viewsets.ViewSet):
     
     @extend_schema(responses=BrandSerializer)
     def create(self, request):
-        brand_name = request.data.get('name')
-        brand = None
-        try:
-            brand = Brand.objects.get(name=brand_name)
-        except Brand.DoesNotExist:     
-            brand = Brand.objects.create(name=request.data['name'])
-            serializer = BrandSerializer(brand, data=request.data)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if Brand.objects.filter(name=request.data.get('name')).exists():
+            return Response({"error": "A brand with this name already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = BrandSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @extend_schema(responses=BrandSerializer)
-    def destroy(self, request, pk=None):
+    def destroy(self, request, slug=None):
         try:
-            queryset = Brand.objects.get(pk=pk)
+            queryset = Brand.objects.get(slug=slug)
         except Brand.DoesNotExist:
-            return Response(
-                {"error": "Brand not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Brand not found"}, status=status.HTTP_404_NOT_FOUND)
         
         queryset.delete()
         return Response({"message": "Brand is deleted"}, status=status.HTTP_200_OK)
@@ -169,10 +141,7 @@ class ProductViewSet(viewsets.ViewSet):
         try:
             queryset = Product.objects.get(pk=pk)
         except Product.DoesNotExist:
-            return Response(
-                {"error": "Product not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         
         serializer = ProductSerializer(queryset)
         return Response(serializer.data)
@@ -182,84 +151,31 @@ class ProductViewSet(viewsets.ViewSet):
         try:
             product = Product.objects.get(pk=pk)
         except Product.DoesNotExist:
-            return Response(
-                {"error": "Product not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        brand_name = request.data.get("brand")
-        if brand_name:
-            try:
-                brand_instance = Brand.objects.get(name=brand_name)  # Get the Brand instance
-                product.brand = brand_instance  # Assign the Brand instance to the product
-                product.save()
-            except Brand.DoesNotExist:
-                return Response(
-                    {"error": "Brand not found"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-        # serializer = ProductSerializer(product, data=request.data, partial=True)
-        # if serializer.is_valid():
-        #     serializer.save()
-            # return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response({"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response(
-            {"message": "Product updated successfully"},
-            status=status.HTTP_200_OK)
-
-    @extend_schema(responses=ProductSerializer)
-    def create(self, request):
-        brand_name = request.data.get('brand')
-        category_name = request.data.get('category')
-        product = None
-
-        if brand_name and category_name:
-            try:
-                brand = Brand.objects.get(name=brand_name)
-                category = Category.objects.get(name=category_name)
-            except Brand.DoesNotExist:
-                return Response(
-                    {"error": f"Brand with name '{brand_name}' not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            except Category.DoesNotExist:
-                return Response(
-                    {"error": f"Category with name '{category_name}' not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-            product = Product.objects.create(
-                name=request.data['name'],
-                description=request.data.get('description', ''),
-                is_digital=request.data.get('is_digital', False),
-                brand=brand,
-                category=category
-            )
-            return Response(
-                {"message": "Product created successfully"},
-                status=status.HTTP_201_CREATED
-            )
-
-        return Response(
-            {"error": "Both brand and category names are required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-        serializer = ProductSerializer(product, data=request.data)
+        serializer = ProductSerializer(product, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(responses=ProductSerializer)
+    def create(self, request):
+        if Product.objects.filter(name=request.data.get('name')).exists():
+            return Response({"error": "A product with this name already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        serializer = ProductSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
     
     @extend_schema(responses=ProductSerializer)
     def destroy(self, request, pk=None):
         try:
             queryset = Product.objects.get(pk=pk)
         except Product.DoesNotExist:
-            return Response(
-                {"error": "Product not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response( {"error": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         
         queryset.delete()
         return Response({"message": "Product is deleted"}, status=status.HTTP_200_OK)
