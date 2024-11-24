@@ -1,5 +1,5 @@
 from .models import Category, Brand, Product
-from .serializers import CategorySerializer, BrandSerializer, ProductSerializer
+from .serializers import CategorySerializer, BrandSerializer, ProductSerializer, CardInformationSerializer
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
@@ -182,4 +182,55 @@ class ProductViewSet(viewsets.ViewSet):
 
 
 
+
+
+import stripe
+
+
+class PaymentViewSet(viewsets.ViewSet):
+    serializer_class = CardInformationSerializer
+
+    def create(self, request):
+        """
+        Handle payment requests via Stripe.
+        """
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            stripe.api_key = 'your-stripe-secret-key'
+            payment_response = self.process_payment(serializer.validated_data)
+            return Response(payment_response, status=payment_response.get('status', status.HTTP_400_BAD_REQUEST))
+        return Response({'errors': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    def process_payment(self, card_data):
+        """
+        Process the payment using Stripe API.
+        """
+        try:
+            # Create PaymentIntent
+            payment_intent = stripe.PaymentIntent.create(
+                amount=10000,  # Amount in smallest currency unit (e.g., cents)
+                currency='inr',
+                payment_method_data={
+                    "type": "card",
+                    "card": {
+                        "number": card_data['card_number'],
+                        "exp_month": int(card_data['expiry_month']),
+                        "exp_year": int(card_data['expiry_year']),
+                        "cvc": card_data['cvc'],
+                    },
+                },
+                confirm=True,
+            )
+
+            # Check payment status
+            if payment_intent['status'] == 'succeeded':
+                return {"message": "Card Payment Success", "status": status.HTTP_200_OK, "payment_intent": payment_intent, }
+            else:
+                return {"message": "Card Payment Failed", "status": status.HTTP_400_BAD_REQUEST, "payment_intent": payment_intent, }
+        except stripe.error.CardError as e:
+            # Handle card errors
+            return { "error": "Card declined", "status": status.HTTP_400_BAD_REQUEST, "details": str(e.error.message), }
+        except Exception as e:
+            # Handle other errors
+            return {"error": "Payment processing failed", "status": status.HTTP_500_INTERNAL_SERVER_ERROR, "details": str(e), }
 

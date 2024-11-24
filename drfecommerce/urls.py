@@ -9,6 +9,7 @@ router = DefaultRouter()
 router.register('category', views.CategoryViewSet)
 router.register('brand', views.BrandViewSet)
 router.register('product', views.ProductViewSet)
+router.register('stripe', views.PaymentViewSet, basename='payment')
 
 
 urlpatterns = [
@@ -24,6 +25,12 @@ urlpatterns = [
     # JWT Authentication
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # Payment Endpoints
+    path('payment/', include(router.urls)),
+
+    # path('payment/', views.PaymentAPI.as_view()),
+
 
 ]
 
